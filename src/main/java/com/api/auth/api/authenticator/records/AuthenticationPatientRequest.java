@@ -1,6 +1,6 @@
 package com.api.auth.api.authenticator.records;
 
-public record AuthenticationRequest(
+public record AuthenticationPatientRequest(
         String email,
         String password
 ) {

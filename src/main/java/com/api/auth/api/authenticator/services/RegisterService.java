@@ -3,7 +3,6 @@ package com.api.auth.api.authenticator.services;
 import com.api.auth.api.authenticator.entities.*;
 import com.api.auth.api.authenticator.enums.RoleType;
 import com.api.auth.api.authenticator.enums.TokenType;
-import com.api.auth.api.authenticator.records.AuthenticationRequest;
 import com.api.auth.api.authenticator.records.AuthenticationResponse;
 import com.api.auth.api.authenticator.records.RegisterRequestDoctor;
 import com.api.auth.api.authenticator.records.RegisterRequestPatient;
@@ -14,12 +13,9 @@ import com.api.auth.api.authenticator.util.EmailValidator;
 import com.api.auth.api.authenticator.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.print.Doc;
 
 @Service
 @RequiredArgsConstructor
@@ -82,24 +78,16 @@ public class RegisterService {
         newDoctor.setSpecialty(request.specialty());
         newDoctor.setPassword(passwordEncoder.encode(request.password()));
 
+        var role = roleRepository.findByRole(RoleType.DOCTOR.name());
+        newDoctor.setRole(role.get());
+
         //Save Register about New Doctor
-        var savedDoctor = doctorRepository.save(newDoctor);
+        doctorRepository.save(newDoctor);
 
         // Create JWT Token for access
         var jwtToken = jwtService.generateToken(newDoctor);
 
-        // Create user to login
-        var user = new User();
-        user.setType(RoleType.DOCTOR);
-        user.setName(savedDoctor.getName());
-        user.setPassword(newDoctor.getPassword());
-        user.setEmail(newDoctor.getEmail());
-
-        //recovery role about user
-        var role = roleRepository.findByRole(RoleType.DOCTOR.name());
-        user.setRole(role.get());
-
-        userRepository.save(user);
+        var user = userRepository.findById(newDoctor.getId()).get();
 
         var token = Token.builder()
             .user(user)
@@ -133,25 +121,18 @@ public class RegisterService {
         newPatient.setCpf(request.cpf());
         newPatient.setEmail(request.email());
         newPatient.setPassword(passwordEncoder.encode(request.password()));
+        newPatient.setType(RoleType.PATIENT);
+
+        var role = roleRepository.findByRole(RoleType.PATIENT.name());
+        newPatient.setRole(role.get());
 
         //Save Register about New Patient
-        var savedPatient = patientRepository.save(newPatient);
+        patientRepository.save(newPatient);
 
         // Create JWT Token for access
         var jwtToken = jwtService.generateToken(newPatient);
 
-        // Create user to login
-        var user = new User();
-        user.setType(RoleType.DOCTOR);
-        user.setName(savedPatient.getName());
-        user.setPassword(newPatient.getPassword());
-        user.setEmail(newPatient.getEmail());
-
-        //recovery role about user
-        var role = roleRepository.findByRole(RoleType.PATIENT.name());
-        user.setRole(role.get());
-
-        userRepository.save(user);
+        var user = userRepository.findById(newPatient.getId()).get();
 
         var token = Token.builder()
                 .user(user)
